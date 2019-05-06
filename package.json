@@ -1,0 +1,23 @@
+{
+  "name": "jb-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin":"./jb.js",
+  "pkg":{
+    "assets":"./config.json"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "HUME",
+  "license": "ISC",
+  "dependencies": {
+    "app-root-path": "^2.2.1",
+    "chalk": "^2.4.2",
+    "commander": "^2.20.0",
+    "inquirer": "^6.3.1",
+    "path": "^0.12.7",
+    "request": "^2.88.0"
+  }
+}
