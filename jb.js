@@ -6,7 +6,7 @@ var inquirer = require('inquirer');
 const log = console.log;
 var request = require('request');
 var path = require('path');
-var root=path.resolve(process.cwd(), '/jbroot');
+var root=path.resolve(process.execPath, '../jbroot');
 var aids={};
 
 
@@ -146,8 +146,8 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
 
   function getprop(s){ //return model,serial,sales
     var info={};
-    var prop=["ro.product.model","ro.csc.sales_code","ril.serialnumber","ro.serialno"];
-    var val=["","","",""];
+    var prop=["ro.product.model","ro.csc.sales_code","ril.serialnumber","ro.serialno","ro.boot.em.model","ro.boot.sales"];
+    var val=["","","","","",""];
     var out = exec(`adb -s ${s} shell getprop`);
     out=String(out);
     out=out.split('\n');
@@ -184,16 +184,13 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
 
   function bright_all_low(ss)
   {
-    
     for(var i=0;i<ss.length;i++){
-      exec(`adb -s ${ss[i]} shell settings put system screen_brightness_mode 0`);
-      exec(`adb -s ${ss[i]} shell settings put system screen_brightness 10`);
+      exec(`adb -s ${ss[i]} shell service call statusbar 2`);
     }
   }
 
   function blink(s){
-    exec(`adb -s ${s} shell settings put system screen_brightness 255`);
-    exec(`adb -s ${s} shell input keyevent 80`);
+    exec(`adb -s ${s} shell service call statusbar 1`);
   }
 
 
@@ -237,8 +234,15 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
     inquirer.prompt(questions).then(answers=>{
       var info=getprop(answers.serial);
       info.label=answers.label;
-      var m=info.val[0];
+      var aosp_check=false;
+      if(info.val[0].indexOf('AOSP')>=0)
+      {
+        aosp_check=true;
+      }
+      var m=info.val[4];
       var s=info.val[1];
+      if(aosp_check)
+        s=info.val[5];
       var n=info.val[2]+','+info.val[3];
       var l=info.label;
       request(
