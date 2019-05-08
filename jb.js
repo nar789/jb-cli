@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.0.7','-v,--version')
+  .version('JB-cli@1.0.9','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.0.7 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.0.7 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -221,10 +221,18 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
       {
         type:'input',
         name:'label',
-        message:'해당 시료의 라벨을 입력해주세요. ',
+        message:'[1/2] 해당 시료의 라벨을 입력해주세요. ',
         filter:function(val){
           return val.toUpperCase();
         }
+      },
+      {
+        type:'input',
+        name:'barcode',
+        message:'[2/2] 해당 시료의 바코드를 찍어주세요~! ',
+        filter:function(val){
+          return val.toLowerCase();
+        },
       },
     ];
     for(var i=0;i<ds.length;i++)
@@ -234,6 +242,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
     inquirer.prompt(questions).then(answers=>{
       var info=getprop(answers.serial);
       info.label=answers.label;
+      info.barcode=answers.barcode;
       var aosp_check=false;
       if(info.val[0].indexOf('AOSP')>=0)
       {
@@ -243,8 +252,9 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
       var s=info.val[1];
       if(aosp_check)
         s=info.val[5];
-      var n=info.val[2]+','+info.val[3];
+      var n=info.val[2]+','+info.val[3]+','+info.barcode;
       var l=info.label;
+
       request(
         { 
             uri: "http://"+config.server+"/api/phone/crud", 
