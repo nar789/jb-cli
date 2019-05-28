@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "bin":"./jb.js",
-  "pkg":{
-    "assets":"./config.json"
+  "bin": "./jb.js",
+  "pkg": {
+    "assets": "./config.json"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,6 +17,7 @@
     "chalk": "^2.4.2",
     "commander": "^2.20.0",
     "inquirer": "^6.3.1",
+    "node-adb": "^0.1.6",
     "path": "^0.12.7",
     "request": "^2.88.0"
   }

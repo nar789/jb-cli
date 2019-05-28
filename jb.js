@@ -83,6 +83,19 @@ program
     check(asset_return);
   });
 
+program
+  .command('update').usage('[phone]').description(`시료 정보 업데이트\n
+    예: jb update\n`)
+  .action(function(phone,opt){
+    if(!init())return;
+    //var imei=getimei('2318ac544f0c7ece');    
+    //console.log(imei);
+    update_nick();
+  });
+
+
+
+
 
   program.parse(process.argv);
 
@@ -100,7 +113,30 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
     }
 });*/
 
-  
+  function getimei(sid)
+  {
+    var imei='';
+    var out = exec(`adb -s ${sid} shell "service call iphonesubinfo 1`);
+    out=String(out);
+    out=out.split(`'`);
+    var g=[];
+    for(var i=0;i<out.length;i++)
+    {
+      if(out[i].indexOf('.')>=0)g.push(out[i]);
+    }
+    for(var i=0;i<g.length;i++)
+    {
+      var s=g[i].split('.');
+      for(var j=0;j<s.length;j++)
+      {
+        if(!isNaN(s[j])==true)
+          imei=imei+s[j];
+      }
+    }
+    imei=imei.trim();
+    console.log(sid+" IMEI : "+imei);
+    return imei;
+  }
 
   function init(){
     if(!load_config())
@@ -193,6 +229,173 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
     exec(`adb -s ${s} shell service call statusbar 1`);
   }
 
+  function update_nick_request(ds,i)
+  {
+      var imei=getimei(ds[i]);
+      var info=getprop(ds[i]);
+      var n=info.val[2]+','+info.val[3];
+
+      request(
+      { 
+          uri: "http://"+config.server+"/api/cli/update", 
+          method: "POST", 
+          form: { 
+              nick:n,
+              imei:imei,
+            } 
+       }, function(err, res, body) {
+          if(!err){
+              if(body==="success"){
+                log(`
+                    [${chalk.green('\u2713')}] ${imei} 가 업데이트 처리가 완료되었습니다.
+                  `);
+                sleep=false;
+              }else{
+                log(`
+                    ${imei} 등록에 실패했습니다.
+                  `);
+              }
+
+          }else
+          {
+            log(err);
+          }
+          if(ds.length-1!=i)            
+            update_nick_request(ds,i+1);
+          else
+            match_by_label();
+       } 
+      );
+  }
+
+  function for_each_ucl(ucl,i)
+  {
+      bright_all_low(ucl);
+      blink(ucl[i]);
+      var info=getprop(ucl[i]);
+      var imei=getimei(ucl[i]);
+      var modelname=info.val[4];
+      if(modelname=='')modelname=info.val[0];
+      var nick=info.val[2]+','+info.val[3];
+      log(info+imei+modelname+nick);
+           request(
+          { 
+              uri: "http://"+config.server+"/api/cli/getidbynoimei", 
+              method: "POST", 
+              form: { 
+                  model:modelname,
+                } 
+           }, function(err, res, body) {
+              if(!err){
+                       var questions = [
+                            {
+                              type:'list',
+                              name:'label',
+                              message:'같은 라벨의 디바이스를 선택해주세요.',
+                              choices:[],
+                            },
+                      ];
+
+                    body=JSON.parse(body);
+                    for(var j=0;j<body.length;j++)
+                    {
+                      var str=body[j].id+"   :   "+body[j].label;
+                      questions[0].choices.push(str);
+                    } 
+
+
+
+                    inquirer.prompt(questions).then(answers=>{
+                        var id=answers.label;
+                        id=id.split(':');
+                        id=id[0];
+
+                    request(
+                      { 
+                          uri: "http://"+config.server+"/api/cli/update2", 
+                          method: "POST", 
+                          form: { 
+                              id:id,
+                              nick:nick,
+                              imei:imei,
+                            } 
+                       }, function(err, res, body) {
+                          if(!err){
+                              if(body==="success"){
+                                log(`
+                                    [${chalk.green('\u2713')}] ${answers.label} 가 성공적으로 등록되었습니다.
+                                  `);
+                              }else{
+                                log(`
+                                    ${answers.label} 등록에 실패했습니다.
+                                  `);
+                              }
+                            }else
+                            {
+                              log(err);
+                            }
+                            if(i!=ucl.length-1)
+                            {
+                              for_each_ucl(ucl,i+1);
+                            }else
+                              return;
+                         }
+
+                    );
+
+
+                  });
+
+
+
+
+                }else
+                {
+                  log(err);
+                }
+           } 
+      );
+
+  }
+
+  function match_by_label()
+  {
+    var ucl=[];
+    var ds=getdevices();
+    get_uncheck_list(ds,0,ucl,()=>{
+      console.log(ucl);
+      log(`
+            미매칭된 디바이스가 ${chalk.red(`${ucl.length}`)}개 있습니다.
+                        `);
+
+
+   
+      if(ucl.length==0)return;
+      for_each_ucl(ucl,0);
+
+
+    });
+  }
+
+
+  function update_nick()
+  {
+      var ds=getdevices();
+      if(ds.length==0)
+      {
+        log(`
+          No connect devices. Please check 'adb devices'
+          `);
+        return;
+      }
+      update_nick_request(ds,0);
+
+
+
+
+      //bright_all_low(ds);
+
+  }
 
   
 
@@ -241,19 +444,25 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
     }
     inquirer.prompt(questions).then(answers=>{
       var info=getprop(answers.serial);
+      var imei=getimei(answers.serial);
       info.label=answers.label;
       info.barcode=answers.barcode;
+      info.imei=imei;
       var aosp_check=false;
       if(info.val[0].indexOf('AOSP')>=0)
       {
         aosp_check=true;
       }
       var m=info.val[4];
+      if(m=='')m=info.val[0];
       var s=info.val[1];
       if(aosp_check)
         s=info.val[5];
-      var n=info.val[2]+','+info.val[3]+','+info.barcode;
+      var n=info.val[2]+','+info.val[3];
+      var b=info.barcode;
       var l=info.label;
+      
+
 
       request(
         { 
@@ -265,6 +474,8 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
                 sales:s,
                 nick:n,
                 label:l,
+                barcode:b,
+                imei:imei,
               } 
          }, function(err, res, body) {
             if(!err){
@@ -292,6 +503,43 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
 function sleep (delay) {
    var start = new Date().getTime();
    while (new Date().getTime() < start + delay);
+}
+
+function get_uncheck_list(ds,i,list,callback)
+{
+   request(
+            { 
+                uri: "http://"+config.server+"/api/phone/crud", 
+                method: "POST", 
+                form: { 
+                    cmd:'check',
+                    serial:ds[i],
+                  } 
+             }, function(err, res, body) {
+                if(!err){
+                    if(body!="fail"){
+                      //aids.push(parseInt(body));
+                      log(`
+            ${ds[i]} ${chalk.green('is registered.')} ID:${body}
+                        `);
+                    }else{
+                      log(`
+            ${ds[i]} ${chalk.red('is not registered.')}
+                        `);
+                      list.push(ds[i]);
+                    }
+                    if(i!=ds.length-1)
+                      get_uncheck_list(ds,i+1,list,callback)
+                    else
+                    {
+                        callback();
+                    }
+                  }else
+                  {
+                    log(err);
+                  }
+             } 
+    );
 }
 
 function check_http(ds,i,all,callback)
