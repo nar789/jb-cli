@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.0.9','-v,--version')
+  .version('JB-cli@1.2.7','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.0.7 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.2.7 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -116,7 +116,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
   function getimei(sid)
   {
     var imei='';
-    var out = exec(`adb -s ${sid} shell "service call iphonesubinfo 1`);
+    var out = exec(`adb -s ${sid} shell "service call iphonesubinfo 1"`);
     out=String(out);
     out=out.split(`'`);
     var g=[];
