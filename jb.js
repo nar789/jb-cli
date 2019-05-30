@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.2.7','-v,--version')
+  .version('JB-cli@1.3.0','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.2.7 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.3.0 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -476,6 +476,10 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
                 label:l,
                 barcode:b,
                 imei:imei,
+                device_state:"",
+                to_email:"",
+                from_email:"",
+                device_comment:"",
               } 
          }, function(err, res, body) {
             if(!err){
