@@ -17,7 +17,7 @@ var config={
 };
 
 program
-  .version('JB-cli@1.3.0','-v,--version')
+  .version('JB-cli@1.3.1','-v,--version')
   .usage('[command] [options]')
   .description(`This is ${chalk.bgGreen('JB-cli')}@1.3.0 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
@@ -65,6 +65,7 @@ program
   .action(function(phone,opt){
     if(!init())return;
     add_phone_none();
+    
   });
 
 program
@@ -90,7 +91,7 @@ program
     if(!init())return;
     //var imei=getimei('2318ac544f0c7ece');    
     //console.log(imei);
-    update_nick();
+    update_info('update');
   });
 
 
@@ -229,11 +230,22 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
     exec(`adb -s ${s} shell service call statusbar 1`);
   }
 
-  function update_nick_request(ds,i)
+  function update_info_request(ds,i,cmd)
   {
       var imei=getimei(ds[i]);
       var info=getprop(ds[i]);
+      var modelname=info.val[4];
+      if(modelname=='')modelname=info.val[0];
       var n=info.val[2]+','+info.val[3];
+      var sales=null;
+      
+      if(cmd=="add")
+      {
+        //add는 sales가 시료를 받은 이후에 바뀔 수가 있기 때문에 update명령어를 통해서만 선택적으로 sales를 업데이트 할 수 있다.
+      }else if(cmd=="update"){
+        //update는 serial,model,sales를 기기에서 읽어와 바꿔준다.
+        sales=info.val[1];
+      }
 
       request(
       { 
@@ -242,6 +254,8 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
           form: { 
               nick:n,
               imei:imei,
+              model:modelname,
+              sales:sales,
             } 
        }, function(err, res, body) {
           if(!err){
@@ -378,7 +392,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
   }
 
 
-  function update_nick()
+  function update_info(cmd)
   {
       var ds=getdevices();
       if(ds.length==0)
@@ -388,7 +402,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
           `);
         return;
       }
-      update_nick_request(ds,0);
+      update_info_request(ds,0,cmd);
 
 
 
@@ -426,6 +440,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
         name:'label',
         message:'[1/2] 해당 시료의 라벨을 입력해주세요. ',
         filter:function(val){
+          if(val===undefined)return;
           return val.toUpperCase();
         }
       },
@@ -434,6 +449,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
         name:'barcode',
         message:'[2/2] 해당 시료의 바코드를 찍어주세요~! ',
         filter:function(val){
+          if(val===undefined)return;
           return val.toLowerCase();
         },
       },
@@ -487,11 +503,13 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
                   log(`
                       [${chalk.green('\u2713')}] ${m+" "+l} 가 성공적으로 등록되었습니다.
                     `);
+                  update_info('add');
                 }else{
                   log(`
                       ${m+" "+l} 등록에 실패했습니다.
                     `);
                 }
+
               }else
               {
                 log(err);
