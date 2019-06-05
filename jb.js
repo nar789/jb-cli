@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.3.1','-v,--version')
+  .version('JB-cli@1.3.2','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.3.0 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.3.2 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -239,7 +239,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
       var n=info.val[2]+','+info.val[3];
       var sales=null;
       
-      if(cmd=="add")
+      if(cmd=="add" || cmd=="use" )
       {
         //add는 sales가 시료를 받은 이후에 바뀔 수가 있기 때문에 update명령어를 통해서만 선택적으로 sales를 업데이트 할 수 있다.
       }else if(cmd=="update"){
@@ -275,7 +275,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
             log(err);
           }
           if(ds.length-1!=i)            
-            update_nick_request(ds,i+1);
+            update_info_request(ds,i+1);
           else
             match_by_label();
        } 
@@ -643,6 +643,7 @@ function check_http(ds,i,all,callback)
                       log(`
           [${chalk.green('\u2713')}] ${aids.length}대 ${type_str+' 완료.'}
                         `);
+                      update_info('use');
                     }else{
                       all=false;
                       log(`
