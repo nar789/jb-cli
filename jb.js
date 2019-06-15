@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.3.3','-v,--version')
+  .version('JB-cli@1.4.0','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.3.3 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.0 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -29,7 +29,8 @@ program
     예: jb set -e son0708@samsung.com -s 10.253.93.42:2323\n`)
   .action(function(env,opt){
     if(!opt || !opt.server || !opt.email){
-      console.log('이메일정보와 서버주소를 입력해주세요. (참고 : jb set -h)'); 
+      //console.log('이메일정보와 서버주소를 입력해주세요. (참고 : jb set -h)'); 
+      if(init())easy_set_config();
       return;
     }
     var j={};
@@ -47,21 +48,28 @@ program
 
 
 program
-  .command('check').usage('[phone]').description(`시료 등록 확인\n
-    예: jb check\n`)
+  .command('check').usage('[phone]').description(`시료 등록 확인  /  사용예 : jb check\n`)
   .action(function(phone,opt){
     if(!init())return;
+
+    
+    /* v1.4.0 deprecated.
+
     check(()=>{
       log(`
           [${chalk.green('\u2713')}] ${aids.length}대 등록 확인 완료.
         `);
     });
+
+    */
+    //1.4.0 added.
+    CheckRunProcess();
+    //
   });
 
 
 program
-  .command('add').usage('[phone]').description(`시료 등록\n
-    예: jb add\n`)
+  .command('add').usage('[phone]').description(`시료 등록 ${chalk.bgRed('@deprecated')}  /  사용예 : jb add ${chalk.bgRed('@deprecated')}\n`)
   .action(function(phone,opt){
     if(!init())return;
     add_phone_none();
@@ -69,29 +77,28 @@ program
   });
 
 program
-  .command('use').usage('[phone]').description(`시료 대여\n
-    예: jb use\n`)
+  .command('use').usage('[phone]').description(`시료 대여  /  사용예 : jb use\n`)
   .action(function(phone,opt){
     if(!init())return;
     check(rental);
   });
 
 program
-  .command('ret').usage('[phone]').description(`시료 반납\n
-    예: jb ret\n`)
+  .command('ret').usage('[phone]').description(`시료 반납  /  사용예 : jb ret\n`)
   .action(function(phone,opt){
     if(!init())return;
     check(asset_return);
   });
 
 program
-  .command('update').usage('[phone]').description(`시료 정보 업데이트\n
-    예: jb update\n`)
+  .command('update').usage('[phone]').description(`시료 정보 업데이트  /  사용예: jb update\n`)
   .action(function(phone,opt){
     if(!init())return;
     //var imei=getimei('2318ac544f0c7ece');    
     //console.log(imei);
+    
     update_info('update');
+    
   });
 
 
@@ -135,11 +142,12 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
       }
     }
     imei=imei.trim();
-    console.log(sid+" IMEI : "+imei);
+    //console.log(sid+" IMEI : "+imei);
     return imei;
   }
 
   function init(){
+
     if(!load_config())
       return false;
     else return true;
@@ -152,9 +160,16 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
 
         r=fs.readFileSync(path.join(root, '/config.json'),'utf8');
       }catch(err){
+        //v1.4.0 deprecated
+        /*
         log(`
             사용자 설정을 해주십시오. (참고 : jb set -h)
           `);
+          */
+
+        //v1.4.0 added.
+        easy_set_config();
+
         return false;
       }
       r=JSON.parse(r);
@@ -166,6 +181,63 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
         `);
       return true;
   }
+
+//v1.4.0 easy setting init--START
+  function easy_set_config(){
+      var questions = [
+      {
+        type:'input',
+        name:'email',
+        message:`
+        [1/2] 아이디를 입력해주세요.
+              ( @samsung.com를 생략하셔도 됩니다. )
+
+              아이디 : `,
+        filter:function(val){
+          if(val===undefined)return;
+          if(val.indexOf('@')<0){
+            val=val+'@samsung.com';
+          }
+          return val;
+        }
+      },
+      {
+        type:'input',
+        name:'server',
+        message:`
+        [2/2] 서버IP주소를 입력해주세요.
+              (기본값 설정으로 엔터쳐서 넘어가셔도 됩니다.)
+
+              서버IP주소 : `,
+        default:'10.253.93.42:2323',
+        filter:function(val){
+          if(val===undefined)return;
+          if(val=='')val='10.253.93.42:2323';
+          return val;
+        }
+      },
+    ];
+
+    inquirer.prompt(questions).then(answers => {
+      var email=answers.email;
+      var server=answers.server;
+      var j={};
+      j.email=email;
+      j.server=server;
+      j=JSON.stringify(j);
+
+      !fs.existsSync(root) && fs.mkdirSync(root);
+      fs.writeFileSync(path.join(root, '/config.json'),j,'utf8');
+      console.log(`
+        [${chalk.green('\u2713')}] 사용자 설정 완료.
+        `);
+    }).catch(err=>{
+      log(err);
+    });
+  }
+
+
+//v1.4.0 easy setting init--END
 
   function getdevices(){ //return array of serials;
     var ret=[];
@@ -205,7 +277,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
     }
     info.prop=prop;
     info.val=val;
-    log(info);
+    //log(info);
     return info;
   }
 
@@ -229,6 +301,333 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
   function blink(s){
     exec(`adb -s ${s} shell service call statusbar 1`);
   }
+
+
+  function all_statusbar_up(ss)
+  {
+    for(var i=0;i<ss.length;i++){
+      var s=ss[i].serial;
+      s=s.split(',')[1];
+      exec(`adb -s ${s} shell service call statusbar 2`);
+    }
+  }
+
+  function statusbar_down(s)
+  {
+    s=s.split(',')[1];
+    exec(`adb -s ${s} shell service call statusbar 1`);
+  }
+
+
+
+
+  /////////////////////v1.4.0 CHECK START///////////////////////////
+
+  function CheckRunProcess()
+  {
+    var deviceDatas=GetDeviceData();
+    if(deviceDatas.length>0){
+      CheckOnDevice(deviceDatas,0);
+    }else{
+      log('No connected devices.');
+    }
+  }
+
+  function CheckOnDevice(deviceDatas,i)
+  {
+
+    all_statusbar_up(deviceDatas);
+    statusbar_down(deviceDatas[i].serial);
+
+    serverData=getServerDataByKey(deviceDatas[i],
+
+      (serverData,deviceData)=>{
+
+        var isSufficient=false;
+        
+        if(serverData.exist){ isSufficient=isSufficientData(serverData); }
+        
+        ShowServerData(serverData,isSufficient);
+        
+        var physicalData={
+          barcode:'',
+          label:'',
+        };
+
+        var allData={};
+        allData.serverData=serverData;
+        allData.deviceData=deviceData;
+        allData.physicalData=physicalData;
+
+        AskPhysicalData(isSufficient,allData,(allData)=>{
+
+
+          var reqData=combineData(allData);
+
+          updateServerData(
+            reqData,
+            ()=>{
+              log(`
+                   [${chalk.green('\u2713')}] 서버와 동기화가 완료되었습니다.
+                `);
+
+              if(i!=deviceDatas.length-1)
+              {
+                CheckOnDevice(deviceDatas,i+1);
+              }else{
+                //all complete.
+                all_statusbar_up(deviceDatas);
+                log(`
+
+          [${chalk.green('\u2713')}] 모든 기기의 동기화가 완료되었습니다. 감사합니다.
+
+                `);
+              }
+            }//updateServerData->Callback
+          );//updateServerData
+
+
+        }); //AskPhysicalData
+              
+
+      }//getServerDataByKey->Callback
+    );//getServerDataByKey
+    
+  }
+
+  function updateServerData(reqData,callback){
+
+    request(
+      { 
+          uri: "http://"+config.server+"/api/phone/crud", 
+          method: "POST", 
+          form: reqData,
+       }, function(err, res, body) {
+          if(!err){
+            if(body==='success')
+              callback();
+            else{
+              log(`
+                   [${chalk.bgRed('!')}] 서버와 동기화에 실패했습니다.
+                `);
+            }
+            
+          }else
+          {
+            log(err);
+          }
+       } 
+      );
+
+  } 
+
+  function combineData(allData){ //return reqData
+    var ret={};
+    //select device data;
+    ret.model=allData.deviceData.model;
+    ret.serial=allData.deviceData.serial.toLowerCase();
+    ret.imei=allData.deviceData.imei;
+
+    //sales exception  --START
+    if(allData.serverData.sales == '' || allData.serverData.sales === undefined)
+      ret.sales=allData.deviceData.sales;
+    else
+      ret.sales=allData.serverData.sales;
+    //sales exception  --END
+
+    //select server data if no physical data.
+    if(allData.physicalData.barcode == '' || allData.physicalData.barcode === undefined)
+      ret.barcode=allData.serverData.barcode;
+    else
+      ret.barcode=allData.physicalData.barcode;
+
+    if(allData.physicalData.label == '' || allData.physicalData.label === undefined)
+      ret.label=allData.serverData.label;
+    else
+      ret.label=allData.physicalData.label;
+
+
+    //more data for request
+    ret.email=config.email;
+    ret.device_state='';
+    ret.to_email='';
+    ret.from_email='';
+    ret.device_comment='';
+
+    ret.cmd="create";
+    
+    return ret;    
+
+  }
+  
+  function AskPhysicalData(isSufficient,allData,callback){ //ask barcode and label to user. // callback(d,s,p)
+
+    if(isSufficient){
+      callback(allData);
+      return;
+    }
+
+    var questions = [
+      {
+        type:'input',
+        name:'label',
+        message:`
+              [1/2] 상태바가 내려온 시료의 라벨을 입력해주세요.
+              ( 예: CTS 1 , GTS 3 )
+              ( 소문자는 자동으로 대문자로 변환됩니다. / 'CTS'는 'CTS/입고자료'로 자동 치환됩니다. )
+        
+              라벨 : `,
+        filter:function(val){
+          if(val===undefined)return;
+          val=val.toUpperCase();
+          
+          //exception code on CTS CASE --START
+          //
+          val=val.replace("CTS","CTS/입고자료");
+          //
+          //exception code on CTS CASE --END
+
+          return val.toUpperCase();
+        }
+      },
+      {
+        type:'input',
+        name:'barcode',
+        message:`
+              [2/2] 상태바가 내려온 시료의 바코드를 찍어주세요~!
+
+              바코드 : `,
+        filter:function(val){
+          if(val===undefined)return;
+          return val.toLowerCase();
+        },
+      },
+    ];
+    
+    inquirer.prompt(questions).then(answers => {
+      allData.physicalData.barcode=answers.barcode;
+      allData.physicalData.label=answers.label;
+      callback(allData);
+    });
+
+    
+
+  }
+
+  function ShowServerData(s,isSufficient){
+
+    if(s.exist)
+    {
+
+      log(`
+          모델이름 : ${s.model}
+          사업자 : ${s.sales}
+          시리얼번호 : ${s.nick}
+          라벨 : ${s.label}
+          IMEI : ${s.imei}
+          바코드 : ${s.barcode}
+        `);
+
+      if(!isSufficient) //  Insufficient infor.
+      {
+        log(`
+              [${chalk.bgRed('!')}] {바코드, 라벨} 대한 정보가 불충분해, {바코드, 라벨} 정보를 입력해주세요.
+        `);
+      }else{
+      }
+
+    }else{//not exist.
+      log(`
+              ${chalk.red('[!]')} 서버에서 정보를 찾을 수 없습니다. {바코드, 라벨} 정보를 입력해주세요.
+        `);
+    }
+    
+
+  }
+
+
+  function getServerDataByKey(deviceData,callback) //callback(serverData,deviceData)
+  {
+    var serial=deviceData.serial.toLowerCase();
+    var imei=deviceData.imei;
+
+    request(
+      { 
+          uri: "http://"+config.server+"/api/phone/crud", 
+          method: "POST", 
+          form: { 
+              cmd:'check_v2',
+              serial:serial,
+              imei:imei,
+            } 
+       }, function(err, res, body) {
+          if(!err){
+            var serverData={exist:false,};
+            if(body!='fail')
+            {
+              serverData=JSON.parse(body);  
+              serverData.exist=true;
+            }
+            callback(serverData,deviceData);
+            
+          }else
+          {
+            log(err);
+          }
+       } 
+      );
+  }
+
+  function CheckValue(val)//return true or false;
+  {
+    if(val=='' || val===undefined || val.indexOf('no')>=0)return false;
+    return true;
+  }
+
+  function isSufficientData(serverData)
+  {
+    //if(!CheckValue(serverData.model))return false;
+    //if(!CheckValue(serverData.sales))return false;
+    //if(!CheckValue(serverData.nick))return false;
+    if(!CheckValue(serverData.label))return false;
+    //if(!CheckValue(serverData.imei))return false;
+    if(!CheckValue(serverData.barcode))return false;
+    return true;
+  }
+
+
+
+  function GetDeviceData()
+  {
+    var serials=getdevices();
+    var r=[];
+    for(var i=0;i<serials.length;i++)
+    {
+      var prop=getprop(serials[i]);
+      var imei=getimei(serials[i]);
+      r.push(DataBuilder(prop,imei));
+    }
+    return r;
+  }
+  function DataBuilder(prop,imei)
+  {
+    var r={};
+    var modelname=prop.val[4];
+    if(modelname=='')modelname=prop.val[0];
+    var serial=prop.val[2]+','+prop.val[3];
+    var sales=prop.val[1];
+
+    r.model=modelname;
+    r.serial=serial;
+    r.imei=imei;
+    r.sales=sales;
+    return r;
+  }
+
+  /////////////////////v1.4.0 CHECK END///////////////////////////
+
+
+
 
   function update_info_request(ds,i,cmd)
   {
@@ -260,13 +659,13 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
        }, function(err, res, body) {
           if(!err){
               if(body==="success"){
+                /*
                 log(`
-                    [${chalk.green('\u2713')}] ${imei} 가 업데이트 처리가 완료되었습니다.
-                  `);
-                sleep=false;
+          [${chalk.green('\u2713')}] ${imei} 가 업데이트 처리가 완료되었습니다.
+                  `);*/
               }else{
                 log(`
-                    ${imei} 등록에 실패했습니다.
+          ${imei} 업데이트에 실패했습니다.
                   `);
               }
 
@@ -276,9 +675,13 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
           }
           if(ds.length-1!=i)            
             update_info_request(ds,i+1,cmd);
-          else
-            match_by_label();
-       } 
+          else{
+            log(`
+          [${chalk.green('\u2713')}] 모든 기기의 업데이트 처리가 완료되었습니다.
+
+                  `);
+           } 
+        }
       );
   }
 
@@ -411,6 +814,44 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
 
   }
 
+  function get_uncheck_list(ds,i,list,callback)
+  {
+     request(
+              { 
+                  uri: "http://"+config.server+"/api/phone/crud", 
+                  method: "POST", 
+                  form: { 
+                      cmd:'check',
+                      serial:ds[i],
+                    } 
+               }, function(err, res, body) {
+                  if(!err){
+                      if(body!="fail"){
+                        //aids.push(parseInt(body));
+                        log(`
+              ${ds[i]} ${chalk.green('is registered.')} ID:${body}
+                          `);
+                      }else{
+                        log(`
+              ${ds[i]} ${chalk.red('is not registered.')}
+                          `);
+                        list.push(ds[i]);
+                      }
+                      if(i!=ds.length-1)
+                        get_uncheck_list(ds,i+1,list,callback)
+                      else
+                      {
+                          callback();
+                      }
+                    }else
+                    {
+                      log(err);
+                    }
+               } 
+      );
+  }
+
+
   
 
   function add_phone_none(){
@@ -522,48 +963,6 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
   }
 
 
-function sleep (delay) {
-   var start = new Date().getTime();
-   while (new Date().getTime() < start + delay);
-}
-
-function get_uncheck_list(ds,i,list,callback)
-{
-   request(
-            { 
-                uri: "http://"+config.server+"/api/phone/crud", 
-                method: "POST", 
-                form: { 
-                    cmd:'check',
-                    serial:ds[i],
-                  } 
-             }, function(err, res, body) {
-                if(!err){
-                    if(body!="fail"){
-                      //aids.push(parseInt(body));
-                      log(`
-            ${ds[i]} ${chalk.green('is registered.')} ID:${body}
-                        `);
-                    }else{
-                      log(`
-            ${ds[i]} ${chalk.red('is not registered.')}
-                        `);
-                      list.push(ds[i]);
-                    }
-                    if(i!=ds.length-1)
-                      get_uncheck_list(ds,i+1,list,callback)
-                    else
-                    {
-                        callback();
-                    }
-                  }else
-                  {
-                    log(err);
-                  }
-             } 
-    );
-}
-
 function check_http(ds,i,all,callback)
 {
    request(
@@ -579,13 +978,11 @@ function check_http(ds,i,all,callback)
                     if(body!="fail"){
                       aids.push(parseInt(body));
                       log(`
-            ${ds[i]} ${chalk.green('is registered.')} ID:${body}
-                        `);
+            ${ds[i]} ${chalk.green('is registered.')} ID:${body}`);
                     }else{
                       all=false;
-                      log(`
-            ${ds[i]} ${chalk.red('is not registered.')}
-                        `);
+            log(`
+            ${ds[i]} ${chalk.red('is not registered.')}`);
                     }
                     if(i!=ds.length-1)
                       check_http(ds,i+1,all,callback)
@@ -594,7 +991,11 @@ function check_http(ds,i,all,callback)
                       if(all===true)
                         callback();
                       else
-                        log('서버에 등록되지 않은 시료가 있습니다. 시료를 등록해주세요. (참고 : jb add -h)')
+                        log(`
+          
+          [${chalk.bgRed('!')}] 서버와 동기화 되지 않은 시료가 있습니다. 시료를 동기화 해주세요. (사용예 : jb check)
+
+                          `)
                     }
                   }else
                   {
@@ -641,12 +1042,14 @@ function check_http(ds,i,all,callback)
                       else if(type==2)type_str='반납';
 
                       log(`
+          
           [${chalk.green('\u2713')}] ${aids.length}대 ${type_str+' 완료.'}
                         `);
                       update_info('use');
                     }else{
                       all=false;
                       log(`
+          
           [${chalk.green('\u2713')}] ${aids.length}대 ${type_str+' 실패했습니다..'}
                         `);
                     }
@@ -663,13 +1066,13 @@ function check_http(ds,i,all,callback)
 
   function rental(){
     var ds=getdevices();
-    log(aids);
+    //log(aids);//DEBUG MODE
     rental_http(ds,1);
   }
 
 
   function asset_return(){
     var ds=getdevices();
-    log(aids);
+    //log(aids);//DEBUG MODE
     rental_http(ds,2); 
   }
