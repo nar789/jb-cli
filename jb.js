@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.4.0','-v,--version')
+  .version('JB-cli@1.4.1','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.0 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.1 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -483,7 +483,8 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
           
           //exception code on CTS CASE --START
           //
-          val=val.replace("CTS","CTS/입고자료");
+          if(val.indexOf('CTS-')<0)
+            val=val.replace("CTS","CTS/입고자료");
           //
           //exception code on CTS CASE --END
 
