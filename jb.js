@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.4.1','-v,--version')
+  .version('JB-cli@1.4.2','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.1 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.2 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -48,9 +48,17 @@ program
 
 
 program
-  .command('check').usage('[phone]').description(`시료 등록 확인  /  사용예 : jb check\n`)
-  .action(function(phone,opt){
+  .command('check').usage('[options]')
+  .option('-f,--force <라벨명>','강제적인 시료 동기화')
+  .description(`시료 등록 확인  /  사용예 : jb check\n`)
+  .action(function(env,opt){
     if(!init())return;
+
+    if(env.force!=undefined)
+    {
+      config.check_force=true;
+      config.check_force_label=env.force;
+    }
 
     
     /* v1.4.0 deprecated.
@@ -63,11 +71,12 @@ program
 
     */
     //1.4.0 added.
-    CheckRunProcess();
+    //1.4.2 add func. set_email.
+    set_email(()=>{CheckRunProcess()});
     //
   });
 
-
+/*
 program
   .command('add').usage('[phone]').description(`시료 등록 ${chalk.bgRed('@deprecated')}  /  사용예 : jb add ${chalk.bgRed('@deprecated')}\n`)
   .action(function(phone,opt){
@@ -75,19 +84,20 @@ program
     add_phone_none();
     
   });
+  */
 
 program
   .command('use').usage('[phone]').description(`시료 대여  /  사용예 : jb use\n`)
   .action(function(phone,opt){
     if(!init())return;
-    check(rental);
+    set_email(()=>{check(rental)});
   });
 
 program
   .command('ret').usage('[phone]').description(`시료 반납  /  사용예 : jb ret\n`)
   .action(function(phone,opt){
     if(!init())return;
-    check(asset_return);
+    set_email(()=>{check(asset_return)});
   });
 
 program
@@ -97,7 +107,7 @@ program
     //var imei=getimei('2318ac544f0c7ece');    
     //console.log(imei);
     
-    update_info('update');
+    set_email(()=>{update_info('update')});
     
   });
 
@@ -124,7 +134,13 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
   function getimei(sid)
   {
     var imei='';
-    var out = exec(`adb -s ${sid} shell "service call iphonesubinfo 1"`);
+    try{
+      var out = exec(`adb -s ${sid} shell "service call iphonesubinfo 1"`);
+    }catch(err)
+    {
+      log(err);
+      return "000000000000000";
+    }
     out=String(out);
     out=out.split(`'`);
     var g=[];
@@ -181,6 +197,41 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
         `);
       return true;
   }
+
+//v1.4.2 call my name func//
+function set_email(callback){
+
+    var questions = [
+      {
+        type:'input',
+        name:'email',
+        message:`
+              아이디를 입력해주세요.
+              ( @samsung.com를 생략하셔도 됩니다. )
+
+              아이디 : `,
+        default:config.email,
+        filter:function(val){
+          if(val===undefined)return;
+          if(val.indexOf('@')<0){
+            val=val+'@samsung.com';
+          }
+          return val;
+        }
+      },
+    ];
+
+    inquirer.prompt(questions).then(answers => {
+      var email=answers.email;
+
+      config.email=email;
+      callback();
+      
+    }).catch(err=>{
+      log(err);
+    });
+
+}
 
 //v1.4.0 easy setting init--START
   function easy_set_config(){
@@ -462,6 +513,15 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
   
   function AskPhysicalData(isSufficient,allData,callback){ //ask barcode and label to user. // callback(d,s,p)
 
+    //v1.4.2//check_force
+    if(config.check_force==true)
+    {
+      allData.physicalData.barcode='';
+      allData.physicalData.label=config.check_force_label;
+      callback(allData);
+      return;
+    }
+
     if(isSufficient){
       callback(allData);
       return;
@@ -483,7 +543,7 @@ var child = exec("adb shell getprop", function (error, stdout, stderr) {
           
           //exception code on CTS CASE --START
           //
-          if(val.indexOf('CTS-')<0)
+          if(val.indexOf('CTS-')<0 && val.indexOf('CTSI')<0 && val.indexOf('CTSV')<0 && val.indexOf('GSI')<0 )
             val=val.replace("CTS","CTS/입고자료");
           //
           //exception code on CTS CASE --END
