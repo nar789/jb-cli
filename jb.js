@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.4.2','-v,--version')
+  .version('JB-cli@1.4.3','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.2 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.3 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -306,8 +306,8 @@ function set_email(callback){
 
   function getprop(s){ //return model,serial,sales
     var info={};
-    var prop=["ro.product.model","ro.csc.sales_code","ril.serialnumber","ro.serialno","ro.boot.em.model","ro.boot.sales"];
-    var val=["","","","","",""];
+    var prop=["ro.product.model","ro.csc.sales_code","ril.serialnumber","ro.serialno","ro.boot.em.model","ro.boot.sales","ro.boot.sales_code"];
+    var val=["","","","","","",""];
     var out = exec(`adb -s ${s} shell getprop`);
     out=String(out);
     out=out.split('\n');
@@ -677,6 +677,11 @@ function set_email(callback){
     if(modelname=='')modelname=prop.val[0];
     var serial=prop.val[2]+','+prop.val[3];
     var sales=prop.val[1];
+    
+
+    //v1.4.3
+    if((sales===undefined || sales=='') && (prop.val[6]!=undefined && prop.val[6]!='')) 
+      sales=prop.val[6]
 
     r.model=modelname;
     r.serial=serial;
@@ -705,6 +710,9 @@ function set_email(callback){
       }else if(cmd=="update"){
         //update는 serial,model,sales를 기기에서 읽어와 바꿔준다.
         sales=info.val[1];
+        //v1.4.3
+        if((sales=='' || sales===undefined)&&(info.val[6]!=undefined && info.val[6]!='')) 
+          sales=info.val[6];
       }
 
       request(
