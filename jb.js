@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.4.3','-v,--version')
+  .version('JB-cli@1.4.4','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.3 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.4 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -504,6 +504,11 @@ function set_email(callback){
     ret.to_email='';
     ret.from_email='';
     ret.device_comment='';
+
+    if(allData.serverData.id=='' ||allData.serverData.id===undefined)
+      ret.id='NULL';
+    else
+      ret.id=allData.serverData.id;
 
     ret.cmd="create";
     
