@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.4.4','-v,--version')
+  .version('JB-cli@1.4.5','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.4 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.5 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
   
 program
   .command('set [options]')
@@ -678,8 +678,8 @@ function set_email(callback){
   function DataBuilder(prop,imei)
   {
     var r={};
-    var modelname=prop.val[4];
-    if(modelname=='')modelname=prop.val[0];
+    var modelname=prop.val[0];
+    if(modelname=='' || modelname===undefined || modelname.length>=10 || modelname.indexOf('GSI')>=0 || modelname.indexOf('gsi')>=0)modelname=prop.val[4];
     var serial=prop.val[2]+','+prop.val[3];
     var sales=prop.val[1];
     
