@@ -50,6 +50,7 @@ program
 program
   .command('check').usage('[options]')
   .option('-f,--force <라벨명>','강제적인 시료 동기화')
+  .option('-r,--recheck','라벨과 바코드를 다시 입력받습니다.')
   .description(`시료 등록 확인  /  사용예 : jb check\n`)
   .action(function(env,opt){
     if(!init())return;
@@ -58,6 +59,10 @@ program
     {
       config.check_force=true;
       config.check_force_label=env.force;
+    }
+
+    if(env.recheck!=undefined){
+      config.check_recheck=true;
     }
 
     
@@ -527,7 +532,7 @@ function set_email(callback){
       return;
     }
 
-    if(isSufficient){
+    if(isSufficient && config.check_recheck!=true){
       callback(allData);
       return;
     }
