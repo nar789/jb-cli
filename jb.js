@@ -19,7 +19,9 @@ var config={
 program
   .version('JB-cli@1.4.5','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.4.5 tool for ${chalk.bgBlue('Samsung')} google approval team. Desgined by ${chalk.underline.bgCyan('jh0511.lee(feat. sujin7891.oh)')}`);
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.6.0 tool for ${chalk.bgBlue('Samsung')} google approval team. 
+(C)JBCOMPANY ${chalk.underline.gray('jh0511.lee && sujin7891.oh')} ${chalk.underline.bgMagenta.bold('sublime.cho && bomii.park')}`);
+
   
 program
   .command('set [options]')
@@ -51,6 +53,7 @@ program
   .command('check').usage('[options]')
   .option('-f,--force <라벨명>','강제적인 시료 동기화')
   .option('-r,--recheck','라벨과 바코드를 다시 입력받습니다.')
+  .option('-s,--serial <시리얼번호>','특정 시리얼 번호 시료만 동기화합니다.')
   .description(`시료 등록 확인  /  사용예 : jb check\n`)
   .action(function(env,opt){
     if(!init())return;
@@ -63,6 +66,11 @@ program
 
     if(env.recheck!=undefined){
       config.check_recheck=true;
+    }
+    
+    if(env.serial!=undefined){
+      config.only_one=true;
+      config.only_one_serial=env.serial;
     }
 
     
@@ -92,25 +100,43 @@ program
   */
 
 program
-  .command('use').usage('[phone]').description(`시료 대여  /  사용예 : jb use\n`)
+  .command('use').usage('[phone]')
+  .option('-s,--serial <시리얼번호>','특정 시리얼 번호 시료만 대여합니다.')
+  .description(`시료 대여  /  사용예 : jb use\n`)
   .action(function(phone,opt){
     if(!init())return;
+    if(phone.serial!=undefined){
+      config.only_one=true;
+      config.only_one_serial=phone.serial;
+    }
     set_email(()=>{check(rental)});
   });
 
 program
-  .command('ret').usage('[phone]').description(`시료 반납  /  사용예 : jb ret\n`)
+  .command('ret').usage('[phone]')
+  .option('-s,--serial <시리얼번호>','특정 시리얼 번호 시료만 반납합니다.')
+  .description(`시료 반납  /  사용예 : jb ret\n`)
   .action(function(phone,opt){
     if(!init())return;
+    if(phone.serial!=undefined){
+      config.only_one=true;
+      config.only_one_serial=phone.serial;
+    }
     set_email(()=>{check(asset_return)});
   });
 
 program
-  .command('update').usage('[phone]').description(`시료 정보 업데이트  /  사용예: jb update\n`)
+  .command('update').usage('[phone]')
+  .option('-s,--serial <시리얼번호>','특정 시리얼 번호 시료만 정보 업데이트합니다.')
+  .description(`시료 정보 업데이트  /  사용예: jb update\n`)
   .action(function(phone,opt){
     if(!init())return;
     //var imei=getimei('2318ac544f0c7ece');    
     //console.log(imei);
+    if(phone.serial!=undefined){
+      config.only_one=true;
+      config.only_one_serial=phone.serial;
+    }
     
     set_email(()=>{update_info('update')});
     
@@ -304,7 +330,13 @@ function set_email(callback){
     {
       if(out[i].length<2)break;
       var t=out[i].split('\t');
-      ret.push(t[0]);
+      if(config.only_one)
+      {
+        if(config.only_one_serial==t[0]){
+          ret.push(t[0]); break;
+        }
+      }else
+        ret.push(t[0]);
     }
     return ret;
   }
