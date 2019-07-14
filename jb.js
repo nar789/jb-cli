@@ -17,9 +17,9 @@ var config={
 };
 
 program
-  .version('JB-cli@1.4.5','-v,--version')
+  .version('JB-cli@1.6.1','-v,--version')
   .usage('[command] [options]')
-  .description(`This is ${chalk.bgGreen('JB-cli')}@1.6.0 tool for ${chalk.bgBlue('Samsung')} google approval team. 
+  .description(`This is ${chalk.bgGreen('JB-cli')}@1.6.1 tool for ${chalk.bgBlue('Samsung')} google approval team. 
 (C)JBCOMPANY ${chalk.underline.gray('jh0511.lee && sujin7891.oh')} ${chalk.underline.bgMagenta.bold('sublime.cho && bomii.park')}`);
 
   
